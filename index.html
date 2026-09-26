@@ -1993,34 +1993,6 @@
       <section class="panel form-card">
         <div class="panel-header">
           <div>
-            <h3>云端同步</h3>'
-            <p class="panel-subtitle">登录后，员工和任务会保存到云端，换电脑打开也能同步。</p>
-          </div>
-        </div>
-        <span class="cloud-status is-warning" id="cloudStatus">云端未配置，当前仅本机保存。</span>
-        <div class="field">
-          <label for="cloudEmail">账号邮箱</label>
-          <input id="cloudEmail" type="email" autocomplete="email" placeholder="请输入邮箱">
-        </div>
-        <div class="field">
-          <label for="cloudPassword">登录密码</label>
-          <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="请输入密码">
-        </div>
-        <div class="split-actions">
-          <button class="primary-button" id="cloudLoginButton" type="button">登录同步</button>
-          <button class="ghost-button" id="cloudRegisterButton" type="button" onclick="document.getElementById('registerDialogBackdrop')?.classList.remove('hidden')">注册账号</button>
-        </div>
-        <div class="button-row">
-          <button class="ghost-button" id="cloudSaveButton" type="button">本地保存到云端</button>
-          <button class="ghost-button" id="cloudLoadButton" type="button">云端同步到本地</button>
-          <button class="ghost-button" id="cloudPasswordButton" type="button">修改登录密码</button>
-          <button class="danger-button" id="cloudLogoutButton" type="button">退出云端账号</button>
-        </div>
-      </section>
-
-      <section class="panel form-card">
-        <div class="panel-header">
-          <div>
             <h3>新增/删减员工</h3>
             <p class="panel-subtitle">可新增员工，也可选择员工后删除其资料和任务。</p>
           </div>
@@ -2045,6 +2017,35 @@
           <select id="deleteMemberSelect"></select>
         </div>
         <button class="danger-button" id="deleteMemberButton" type="button">删除选中员工</button>
+      </section>
+
+
+      <section class="panel form-card">
+        <div class="panel-header">
+          <div>
+            <h3>云端同步</h3>'
+            <p class="panel-subtitle">登录后，员工和任务会保存到云端，换电脑打开也能同步。</p>
+          </div>
+        </div>
+        <span class="cloud-status is-warning" id="cloudStatus">云端未配置，当前仅本机保存。</span>
+        <div class="field">
+          <label for="cloudEmail">账号邮箱</label>
+          <input id="cloudEmail" type="email" autocomplete="email" placeholder="请输入邮箱">
+        </div>
+        <div class="field">
+          <label for="cloudPassword">登录密码</label>
+          <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="请输入密码">
+        </div>
+        <div class="split-actions">
+          <button class="primary-button" id="cloudLoginButton" type="button">登录同步</button>
+          <button class="ghost-button" id="cloudRegisterButton" type="button" onclick="document.getElementById('registerDialogBackdrop')?.classList.remove('hidden')">注册账号</button>
+        </div>
+        <div class="button-row">
+          <button class="ghost-button" id="cloudSaveButton" type="button">本地保存到云端</button>
+          <button class="ghost-button" id="cloudLoadButton" type="button">云端同步到本地</button>
+          <button class="ghost-button" id="cloudPasswordButton" type="button">修改登录密码</button>
+          <button class="danger-button" id="cloudLogoutButton" type="button">退出云端账号</button>
+        </div>
       </section>
 
       <section class="panel form-card">
@@ -4612,6 +4613,8 @@
       if (statsSubtitle) statsSubtitle.textContent = "快速掌握任务状态分布。";
 
       profileCard.insertAdjacentElement("afterend", statsPanel);
+      const sideEventPanel = document.getElementById("sideEventPanel");
+      if (sideEventPanel) statsPanel.insertAdjacentElement("afterend", sideEventPanel);
       if (!insightGrid.children.length) {
         insightGrid.remove();
       }
