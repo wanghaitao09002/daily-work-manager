@@ -5393,9 +5393,31 @@
       });
     }
 
+    function getAllExpandedEvents() {
+      const result = [];
+      getFilteredEvents().forEach((ev) => {
+        result.push(ev);
+        if (!ev.repeat || ev.repeat === "none") return;
+        const start = new Date(ev.date + "T00:00:00");
+        const end = ev.repeatEnd ? new Date(ev.repeatEnd + "T00:00:00") : new Date(start);
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const ds = d.toISOString().slice(0, 10);
+          if (ds === ev.date) continue;
+          let match = false;
+          if (ev.repeat === "daily") match = true;
+          else if (ev.repeat === "weekly" && d.getDay() === start.getDay()) match = true;
+          else if (ev.repeat === "monthly" && d.getDate() === start.getDate()) match = true;
+          if (match) result.push(Object.assign({}, ev, { date: ds }));
+        }
+      });
+      return result.sort((a, b) => {
+        const da = a.date + (a.startTime || ""), db = b.date + (b.startTime || "");
+        return da < db ? -1 : da > db ? 1 : 0;
+      });
+    }
     function renderEventList() {
       calLabel.textContent = "事件列表";
-      const evs = getFilteredEvents();
+      const evs = getAllExpandedEvents();
       if (!evs.length) {
         eventCalendarWrap.innerHTML = '<div class="event-list-view"><div class="empty-card"><strong>暂无匹配事件</strong><p>点击右上角"新建事件"添加，或调整筛选条件。</p></div></div>';
         return;
