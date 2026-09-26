@@ -5247,7 +5247,7 @@
       });
     }
 
-    'function getEventsOnDate(ds) {
+    function getEventsOnDate(ds) {
       const result = [];
       getFilteredEvents().forEach((ev) => {
         if (ev.date === ds) { result.push(ev); return; }
