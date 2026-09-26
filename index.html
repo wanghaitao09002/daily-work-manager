@@ -1975,12 +1975,25 @@
         <button class="close-button" id="togglePanelButton" type="button" aria-label="收起右侧面板">×</button>
       </div>
 
-      <section class="profile-card" id="profileCard"></section>
+'      <section class="profile-card" id="profileCard"></section>
+
+      <section class="panel form-card" id="sideEventPanel">
+        <div class="panel-header">
+          <div>
+            <h3>事件备忘录</h3>
+            <p class="panel-subtitle">今天和近期日程一览，点击可查看详情。</p>
+          </div>
+        </div>
+        <div id="sideEventList" style="font-size:13px;line-height:1.8;"></div>
+        <div class="button-row" style="margin-top:10px;">
+          <button class="ghost-button" id="sideGotoEventBtn" type="button" style="width:100%;">打开日历视图</button>
+        </div>
+      </section>
 
       <section class="panel form-card">
         <div class="panel-header">
           <div>
-            <h3>云端同步</h3>
+            <h3>云端同步</h3>'
             <p class="panel-subtitle">登录后，员工和任务会保存到云端，换电脑打开也能同步。</p>
           </div>
         </div>
@@ -5318,6 +5331,7 @@
       if (state.calView === "month") renderMonthCalendar();
       else if (state.calView === "week") renderWeekView();
       else renderEventList();
+      renderSideEvents();
     }
 
     function renderMonthCalendar() {
@@ -5673,6 +5687,8 @@
       document.getElementById("calNext").addEventListener("click", () => shiftCalCursor(1));
       document.getElementById("calToday").addEventListener("click", goToday);
       document.getElementById("addEventButton").addEventListener("click", () => openEventDialog(state.calCursor));
+      const sideBtn = document.getElementById("sideGotoEventBtn");
+      if (sideBtn) sideBtn.addEventListener("click", () => switchView("events"));
       filterEventType.addEventListener("change", () => { state.filterEventType = filterEventType.value; saveState(); renderEventsView(); });
       filterEventMember.addEventListener("change", () => { state.filterEventMember = filterEventMember.value; saveState(); renderEventsView(); });
       filterEventKeyword.addEventListener("input", () => { state.filterEventKeyword = filterEventKeyword.value; saveState(); renderEventsView(); });
@@ -5693,6 +5709,50 @@
       });
     }
 
+    function renderSideEvents() {
+      const el = document.getElementById("sideEventList");
+      if (!el) return;
+      if (!state.events || !state.events.length) {
+        el.innerHTML = '<div style="color:#999;padding:8px 0;">暂无事件，点击下方按钮新建。</div>';
+        return;
+      }
+      const today = TODAY;
+      const upcoming = [];
+      state.events.forEach((ev) => {
+        if (ev.status === "cancelled" || ev.status === "done") return;
+        const dates = [ev.date];
+        if (ev.repeat && ev.repeat !== "none") {
+          const start = new Date(ev.date + "T00:00:00");
+          const t = new Date(today + "T00:00:00");
+          if (t >= start) {
+            if (ev.repeat === "daily") dates.push(today);
+            else if (ev.repeat === "weekly" && t.getDay() === start.getDay()) dates.push(today);
+            else if (ev.repeat === "monthly" && t.getDate() === start.getDate()) dates.push(today);
+          }
+        }
+        dates.forEach((ds) => {
+          if (ds >= today) upcoming.push(Object.assign({}, ev, { date: ds }));
+        });
+      });
+      upcoming.sort((a,b) => (a.date+(a.startTime||"")).localeCompare(b.date+(b.startTime||"")));
+      const next = upcoming.slice(0, 6);
+      if (!next.length) {
+        el.innerHTML = '<div style="color:#999;padding:8px 0;">近期暂无待办事件。</div>';
+        return;
+      }
+      let html = "";
+      next.forEach((ev) => {
+        const color = getEventColor(ev.type);
+        const isToday = ev.date === today;
+        html += '<div style="display:flex;align-items:flex-start;gap:6px;padding:4px 0;cursor:pointer;" onclick="showEventDetail(\'' + ev.id + '\')">';
+        html += '<span style="width:8px;height:8px;border-radius:50%;background:' + color + ';margin-top:6px;flex-shrink:0;"></span>';
+        html += '<div style="flex:1;min-width:0;">';
+        html += '<div style="font-weight:500;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(ev.title) + '</div>';
+        html += '<div style="font-size:11px;color:#999;">' + (isToday ? "今天" : ev.date) + (ev.startTime ? " " + ev.startTime : "") + '</div>';
+        html += '</div></div>';
+      });
+      el.innerHTML = html;
+    }
     function render() {
       if (!Array.isArray(state.activeStatusFilters) || !state.activeStatusFilters.length) {
         state.activeStatusFilters = [...defaultState.activeStatusFilters];
@@ -5711,6 +5771,7 @@
       renderTaskTable();
       renderTaskManager();
       renderProfileCard();
+      renderSideEvents();
       renderReportBox();
       renderMemberDeleteOptions();
       updateActionButtons();
