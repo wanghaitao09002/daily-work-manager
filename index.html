@@ -2107,6 +2107,14 @@
       </div>
       <button class="primary-button" id="addEventButton" type="button" style="margin-left:auto;">+ 新建事件</button>
     </div>
+    <div style="display:flex;gap:14px;padding:6px 4px;font-size:12px;color:#666;flex-wrap:wrap;" id="eventLegend">
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#4567f7;margin-right:4px;"></span>会议</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#1fa97c;margin-right:4px;"></span>客户拜访</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#ef5b5b;margin-right:4px;"></span>截止节点</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#ff9d2f;margin-right:4px;"></span>评审</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#8b5cf6;margin-right:4px;"></span>培训</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#6b758b;margin-right:4px;"></span>其他</span>
+    </div>
     <div id="eventCalendarWrap"></div>
   </div>
   <button class="open-panel-button" id="openPanelButton" type="button">打开管理面板</button>
@@ -2283,6 +2291,19 @@
             <label for="eventTask">关联任务（可选）</label>
             <select id="eventTask"><option value="">不关联任务</option></select>
           </div>
+          <div class="field">
+            <label for="eventRepeat">重复</label>
+            <select id="eventRepeat">
+              <option value="none">不重复</option>
+              <option value="daily">每天</option>
+              <option value="weekly">每周</option>
+              <option value="monthly">每月</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="eventRepeatEnd">重复至（可选）</label>
+            <input type="date" id="eventRepeatEnd" />
+          </div>
           <div class="field full">
             <label for="eventNote">备注</label>
             <textarea id="eventNote" rows="3" placeholder="补充说明、参会人名单、准备事项..."></textarea>
@@ -2296,7 +2317,12 @@
       </form>
     </section>
   </div>
-  <div class="reminder-toast" id="reminderToast"></div>
+'  <div class="event-detail-backdrop hidden" id="eventDetailBackdrop" style="position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;display:flex;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:12px;width:420px;max-width:92vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+      <div id="eventDetailContent" style="padding:20px;"></div>
+    </div>
+  </div>
+  <div class="reminder-toast" id="reminderToast"></div>'
   <div class="toast" id="toast"></div>
   <div class="wechat-service" aria-live="polite">
     <button
@@ -5224,7 +5250,22 @@
       });
     }
 
-    function getEventsOnDate(ds) { return getFilteredEvents().filter((ev) => ev.date === ds); }
+    'function getEventsOnDate(ds) {
+      const result = [];
+      getFilteredEvents().forEach((ev) => {
+        if (ev.date === ds) { result.push(ev); return; }
+        if (!ev.repeat || ev.repeat === "none") return;
+        const start = new Date(ev.date + "T00:00:00");
+        const check = new Date(ds + "T00:00:00");
+        if (check < start) return;
+        const end = ev.repeatEnd ? new Date(ev.repeatEnd + "T00:00:00") : new Date(ev.date + "T23:59:59");
+        if (check > end) return;
+        if (ev.repeat === "daily") { result.push(ev); }
+        else if (ev.repeat === "weekly" && check.getDay() === start.getDay()) { result.push(ev); }
+        else if (ev.repeat === "monthly" && check.getDate() === start.getDate()) { result.push(ev); }
+      });
+      return result;
+    }'
 
     function switchView(view) {
       state.currentView = view;
@@ -5313,7 +5354,7 @@
         });
       });
       eventCalendarWrap.querySelectorAll(".event-chip").forEach((chip) => {
-        chip.addEventListener("click", (e) => { e.stopPropagation(); openEventDialog(null, chip.dataset.eventId); });
+        chip.addEventListener("click", (e) => { e.stopPropagation(); showEventDetail(chip.dataset.eventId); });
       });
       eventCalendarWrap.querySelectorAll(".event-more").forEach((more) => {
         more.addEventListener("click", (e) => { e.stopPropagation(); openEventDialog(more.dataset.date); });
@@ -5350,7 +5391,7 @@
         });
       });
       eventCalendarWrap.querySelectorAll(".event-chip").forEach((chip) => {
-        chip.addEventListener("click", (e) => { e.stopPropagation(); openEventDialog(null, chip.dataset.eventId); });
+        chip.addEventListener("click", (e) => { e.stopPropagation(); showEventDetail(chip.dataset.eventId); });
       });
     }
 
@@ -5395,7 +5436,7 @@
       eventCalendarWrap.querySelectorAll(".event-list-item").forEach((item) => {
         item.addEventListener("click", (e) => {
           if (e.target.tagName === "BUTTON") return;
-          openEventDialog(null, item.dataset.eventId);
+          showEventDetail(item.dataset.eventId);
         });
       });
       eventCalendarWrap.querySelectorAll("[data-act]").forEach((btn) => {
@@ -5411,6 +5452,39 @@
       });
     }
 
+    function showEventDetail(eventId) {
+      const ev = state.events.find((e) => e.id === eventId);
+      if (!ev) return;
+      const color = getEventColor(ev.type);
+      const label = getEventLabel(ev.type);
+      const names = (ev.memberIds || []).map((id) => { const m = getMemberById(id); return m ? m.name : ""; }).filter(Boolean).join("、");
+      const task = ev.taskId ? state.tasks.find((t) => t.id === ev.taskId) : null;
+      const repeatLabel = {none:"", daily:"每天", weekly:"每周", monthly:"每月"}[ev.repeat||"none"] || "";
+      let html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">';
+      html += '<span style="width:12px;height:12px;border-radius:50%;background:' + color + ';display:inline-block;"></span>';
+      html += '<span style="font-size:12px;color:' + color + ';font-weight:600;">' + label + '</span>';
+      if (ev.status === "done") html += '<span style="font-size:12px;color:#1fa97c;margin-left:8px;">✓ 已完成</span>';
+      if (ev.status === "cancelled") html += '<span style="font-size:12px;color:#999;margin-left:8px;">已取消</span>';
+      html += '</div>';
+      html += '<h3 style="margin:0 0 12px;font-size:20px;color:#1a1a2e;">' + escapeHtml(ev.title) + '</h3>';
+      html += '<div style="font-size:14px;color:#555;line-height:2;">';
+      html += '<div>📅 ' + ev.date + (ev.startTime ? ' ' + ev.startTime + (ev.endTime ? '-' + ev.endTime : '') : '');
+      if (repeatLabel) html += ' · ' + repeatLabel;
+      html += '</div>';
+      if (ev.location) html += '<div>📍 ' + escapeHtml(ev.location) + '</div>';
+      if (names) html += '<div>👤 ' + escapeHtml(names) + '</div>';
+      if (task) html += '<div>📋 ' + escapeHtml(task.title) + '</div>';
+      if (ev.reminderMinutes > 0) html += '<div>⏰ 提前' + ev.reminderMinutes + '分钟提醒</div>';
+      if (ev.note) html += '<div style="margin-top:8px;padding:10px;background:#f6f7fb;border-radius:8px;color:#666;">' + escapeHtml(ev.note) + '</div>';
+      html += '</div>';
+      html += '<div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end;">';
+      html += '<button onclick="closeEventDetail()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">关闭</button>';
+      html += '<button onclick="closeEventDetail();openEventDialog(null,\'' + ev.id + '\')" style="padding:8px 16px;border:none;border-radius:8px;background:#4567f7;color:#fff;cursor:pointer;">编辑</button>';
+      html += '</div>';
+      document.getElementById("eventDetailContent").innerHTML = html;
+      document.getElementById("eventDetailBackdrop").classList.remove("hidden");
+    }
+    function closeEventDetail() { document.getElementById("eventDetailBackdrop").classList.add("hidden"); }
     function openEventDialog(dateStr, eventId) {
       editingEventId = eventId || null;
       const ev = eventId ? state.events.find((e) => e.id === eventId) : null;
@@ -5428,6 +5502,8 @@
         selectedEventType = ev.type || "other";
         Array.from(eventMembers.options).forEach((o) => { o.selected = (ev.memberIds || []).includes(o.value); });
         eventTask.value = ev.taskId || "";
+        document.getElementById("eventRepeat").value = ev.repeat || "none";
+        document.getElementById("eventRepeatEnd").value = ev.repeatEnd || "";
         eventDoneButton.style.display = "";
         eventDeleteButton.style.display = "";
         eventDoneButton.textContent = ev.status === "done" ? "重新打开" : "标记完成";
@@ -5436,6 +5512,8 @@
         eventDate.value = dateStr || TODAY;
         eventStartTime.value = "09:00"; eventEndTime.value = "10:00";
         selectedEventType = "other";
+        document.getElementById("eventRepeat").value = "none";
+        document.getElementById("eventRepeatEnd").value = "";
         eventDoneButton.style.display = "none";
         eventDeleteButton.style.display = "none";
       }
@@ -5462,6 +5540,8 @@
         type: selectedEventType,
         memberIds: Array.from(eventMembers.selectedOptions).map((o) => o.value),
         taskId: eventTask.value || null,
+        repeat: document.getElementById("eventRepeat").value,
+        repeatEnd: document.getElementById("eventRepeatEnd").value || "",
         note: eventNote.value.trim()
       };
       if (editingEventId) {
@@ -5599,6 +5679,7 @@
       closeEventDialogButton.addEventListener("click", closeEventDialog);
       eventDialogBackdrop.addEventListener("click", (e) => { if (e.target === eventDialogBackdrop) closeEventDialog(); });
       eventForm.addEventListener("submit", saveEventForm);
+      document.getElementById("eventDetailBackdrop").addEventListener("click", (e) => { if (e.target.id === "eventDetailBackdrop") closeEventDetail(); });
       eventDeleteButton.addEventListener("click", deleteEvent);
       eventDoneButton.addEventListener("click", toggleEventDone);
       eventTypePicker.querySelectorAll(".event-type-option").forEach((btn) => {
