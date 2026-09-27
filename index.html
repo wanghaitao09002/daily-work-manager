@@ -3765,11 +3765,11 @@
               const effectiveStatus = getEffectiveTaskStatus(task);
               return `
                 <tr data-task-id="${task.id}" data-member-id="${task.memberId}" class="${task.id === state.selectedTaskId ? "selected-row" : ""}">
-'                  <td>
+                  <td>
                     <select class="table-task-select" data-task-select="memberId" data-task-id="${task.id}" aria-label="转派任务">
                       ${state.members.map((m) => `<option value="${m.id}" ${m.id === task.memberId ? "selected" : ""}>${escapeHtml(m.name)}</option>`).join("")}
                     </select>
-                  </td>'
+                  </td>
                   <td>${task.title}</td>
                   <td>
                     <select class="table-task-select ${getPrioritySelectClass(task.priority)}" data-task-select="priority" data-task-id="${task.id}" aria-label="修改优先级">
