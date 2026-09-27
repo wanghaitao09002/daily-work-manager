@@ -4199,6 +4199,11 @@
           return;
         }
 
+        const newMemberId = String(formData.get("assignMember") || task.memberId);
+        if (newMemberId && newMemberId !== task.memberId) {
+          updateMemberSnapshot(task.memberId);
+          task.memberId = newMemberId;
+        }
         task.title = title;
         task.start = start;
         task.due = due;
