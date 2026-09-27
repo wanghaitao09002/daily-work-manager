@@ -3049,11 +3049,15 @@
 
     function updateTaskField(taskId, field, value) {
       const task = state.tasks.find((item) => item.id === taskId);
-      if (!task || !["title", "start", "due", "completedAt", "priority", "status"].includes(field)) {
+      if (!task || !["title", "start", "due", "completedAt", "priority", "status", "memberId"].includes(field)) {
         return;
       }
-
+      const oldMemberId = task.memberId;
       task[field] = typeof value === "string" ? value.trim() : value;
+      if (field === "memberId" && oldMemberId !== value) {
+        updateMemberSnapshot(oldMemberId);
+        showToast("任务已转派给 " + (getMemberById(value) ? getMemberById(value).name : "新员工"));
+      }
       if (field === "status") {
         if (task.status === "todo") {
           task.progress = 0;
@@ -3746,7 +3750,11 @@
               const effectiveStatus = getEffectiveTaskStatus(task);
               return `
                 <tr data-task-id="${task.id}" data-member-id="${task.memberId}" class="${task.id === state.selectedTaskId ? "selected-row" : ""}">
-                  <td>${member ? member.name : "未分配"}</td>
+'                  <td>
+                    <select class="table-task-select" data-task-select="memberId" data-task-id="${task.id}" aria-label="转派任务">
+                      ${state.members.map((m) => `<option value="${m.id}" ${m.id === task.memberId ? "selected" : ""}>${escapeHtml(m.name)}</option>`).join("")}
+                    </select>
+                  </td>'
                   <td>${task.title}</td>
                   <td>
                     <select class="table-task-select ${getPrioritySelectClass(task.priority)}" data-task-select="priority" data-task-id="${task.id}" aria-label="修改优先级">
