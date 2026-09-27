@@ -1112,7 +1112,9 @@
       background: rgba(31, 169, 124, 0.1);
     }
 
-    #taskTableWrap { border-top: none; }
+    #taskTableWrap { border-top: none !important; }
+    .task-filter-toolbar { border-bottom: none !important; box-shadow: none !important; }
+    .task-filter-toolbar::after, .task-filter-toolbar::before { display: none !important; }
     .task-filter-toolbar {
       border-bottom: none !important;
     }
