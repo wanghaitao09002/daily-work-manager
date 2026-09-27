@@ -3729,6 +3729,11 @@
             ? `定义时间内事项：${startRange[0]} 至 ${startRange[1]}`
             : "全部开始时间";
       tableCaption.textContent = `当前显示 ${tasks.length} 项任务 · ${startFilterLabel}`;
+      // 强制去掉筛选栏下方点线
+      const ft = document.querySelector(".task-filter-toolbar");
+      if (ft) { ft.style.border = "none"; ft.style.boxShadow = "none"; ft.style.background = "none"; }
+      const fr = document.getElementById("filterRow");
+      if (fr) { fr.style.border = "none"; fr.style.boxShadow = "none"; fr.style.background = "none"; }
       if (!tasks.length) {
         taskTableWrap.innerHTML = `
           <div class="empty-card">
