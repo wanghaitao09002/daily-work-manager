@@ -2152,6 +2152,10 @@
           <input id="dialogTaskName" name="taskName" type="text" placeholder="例如：周三安排候选人面试" required>
         </div>
         <div class="field">
+          <label for="dialogAssignMember">指派给</label>
+          <select id="dialogAssignMember" name="assignMember" required></select>
+        </div>
+        <div class="field">
           <label for="dialogStartDate">开始时间</label>
           <input id="dialogStartDate" name="startDate" type="date" required>
         </div>
@@ -4121,6 +4125,7 @@
       dialogMemberId = memberId;
       taskDialogTitle.textContent = "新增任务";
       taskDialogAssignee.textContent = "分配给：" + member.name;
+      document.getElementById("dialogAssignMember").innerHTML = state.members.map((m) => `<option value="${m.id}" ${m.id === member.id ? "selected" : ""}>${escapeHtml(m.name)}</option>`).join("");
       dialogSubmitButton.textContent = "创建任务";
       dialogTaskForm.reset();
       document.getElementById("dialogStartDate").value = TODAY;
@@ -4145,6 +4150,7 @@
       state.selectedTaskId = task.id;
       taskDialogTitle.textContent = "编辑任务";
       taskDialogAssignee.textContent = "正在编辑：" + (member ? member.name : "未分配");
+      document.getElementById("dialogAssignMember").innerHTML = state.members.map((m) => `<option value="${m.id}" ${m.id === task.memberId ? "selected" : ""}>${escapeHtml(m.name)}</option>`).join("");
       dialogSubmitButton.textContent = "保存修改";
       normalizeTaskDates(task);
       document.getElementById("dialogTaskName").value = task.title;
