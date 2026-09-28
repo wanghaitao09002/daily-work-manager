@@ -2352,6 +2352,20 @@
   </div>
   <div class="reminder-toast" id="reminderToast"></div>'
   <div class="toast" id="toast"></div>
+  <div class="modal-backdrop hidden" id="errorDialogBackdrop" style="z-index:9999;">
+    <section class="task-dialog" role="alertdialog" aria-modal="true" style="max-width:400px;width:90%;">
+      <div class="task-dialog-head">
+        <div>
+          <h3 id="errorDialogTitle">提示</h3>
+        </div>
+        <button class="dialog-close" id="errorDialogClose" type="button" aria-label="关闭">×</button>
+      </div>
+      <p id="errorDialogMessage" style="margin:16px 0;color:#475569;line-height:1.6;font-size:14px;"></p>
+      <div style="text-align:right;margin-top:8px;">
+        <button class="primary-button" id="errorDialogOk" type="button" style="min-width:80px;">知道了</button>
+      </div>
+    </section>
+  </div>
   <div class="wechat-service" aria-live="polite">
     <button
       id="wechatServiceButton"
@@ -2662,6 +2676,20 @@
       }, 2200);
     }
 
+    function showErrorDialog(title, message) {
+      document.getElementById("errorDialogTitle").textContent = title || "提示";
+      document.getElementById("errorDialogMessage").textContent = message || "";
+      document.getElementById("errorDialogBackdrop").classList.remove("hidden");
+    }
+    function closeErrorDialog() {
+      document.getElementById("errorDialogBackdrop").classList.add("hidden");
+    }
+    document.getElementById("errorDialogOk").addEventListener("click", closeErrorDialog);
+    document.getElementById("errorDialogClose").addEventListener("click", closeErrorDialog);
+    document.getElementById("errorDialogBackdrop").addEventListener("click", function (e) {
+      if (e.target === this) closeErrorDialog();
+    });
+
     function isCloudConfigured() {
       return Boolean(
         window.supabase &&
@@ -2816,7 +2844,7 @@
       }
       const { data, error } = await withRetry(() => cloudClient.auth.signUp({ email, password }));
       if (error) {
-        showToast("注册失败：" + error.message);
+        showErrorDialog("注册失败", error.message);
         return;
       }
       cloudEmail.value = email;
@@ -2848,7 +2876,7 @@
       }
       const { data, error } = await withRetry(() => cloudClient.auth.signInWithPassword({ email, password }));
       if (error) {
-        showToast("登录失败：" + error.message);
+        showErrorDialog("登录失败", error.message + "\n\n请检查邮箱和密码是否正确，或网络连接是否正常。");
         return;
       }
       cloudUser = data.session ? data.user : null;
