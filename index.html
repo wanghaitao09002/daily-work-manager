@@ -2010,7 +2010,10 @@
         </div>
         <div class="field">
           <label for="cloudPassword">登录密码</label>
-          <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="请输入密码">
+          <div style="position:relative;">
+            <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="请输入密码" style="padding-right:40px;">
+            <button type="button" id="togglePasswordBtn" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#6b758b;padding:4px;" aria-label="显示密码">👁</button>
+          </div>
         </div>
         <div class="split-actions">
           <button class="primary-button" id="cloudLoginButton" type="button">登录同步</button>
@@ -5689,6 +5692,19 @@
       exportDataButton.addEventListener("click", exportDataBackup);
       importDataButton.addEventListener("click", () => importDataInput.click());
       importDataInput.addEventListener("change", importDataBackup);
+      document.getElementById("togglePasswordBtn").addEventListener("click", function () {
+        const input = document.getElementById("cloudPassword");
+        const btn = this;
+        if (input.type === "password") {
+          input.type = "text";
+          btn.textContent = "🙈";
+          btn.setAttribute("aria-label", "隐藏密码");
+        } else {
+          input.type = "password";
+          btn.textContent = "👁";
+          btn.setAttribute("aria-label", "显示密码");
+        }
+      });
       cloudLoginButton.addEventListener("click", loginCloudAccount);
       cloudRegisterButton.addEventListener("click", openRegisterDialog);
       cloudSaveButton.addEventListener("click", () => saveCloudState(true));
