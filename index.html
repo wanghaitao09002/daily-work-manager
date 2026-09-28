@@ -3248,14 +3248,14 @@
       start.setDate(date.getDate() - day + 1);
       const end = new Date(start);
       end.setDate(start.getDate() + 6);
-      return [start.toISOString().slice(0, 10), end.toISOString().slice(0, 10)];
+      return [getLocalDateString(start), getLocalDateString(end)];
     }
 
     function getMonthRange(dateText = TODAY) {
       const date = new Date(dateText + "T00:00:00");
       const start = new Date(date.getFullYear(), date.getMonth(), 1);
       const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-      return [start.toISOString().slice(0, 10), end.toISOString().slice(0, 10)];
+      return [getLocalDateString(start), getLocalDateString(end)];
     }
 
     function getStartDateRange() {
@@ -4524,7 +4524,7 @@
       const data = buildPersistedState();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
       const link = document.createElement("a");
-      const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      const stamp = getLocalDateString().replace(/-/g, "");
       link.href = URL.createObjectURL(blob);
       link.download = "日常作业管理数据备份-" + stamp + ".json";
       document.body.appendChild(link);
@@ -5379,7 +5379,7 @@
       const d = new Date(state.calCursor + "T00:00:00");
       if (state.calView === "month") d.setMonth(d.getMonth() + dir);
       else d.setDate(d.getDate() + dir * 7);
-      state.calCursor = d.toISOString().slice(0, 10);
+      state.calCursor = getLocalDateString(d);
       saveState();
       renderEventsView();
     }
@@ -5415,7 +5415,7 @@
       html += '</div><div class="calendar-grid">';
       for (let i = 0; i < 42; i++) {
         const cd = new Date(gridStart); cd.setDate(gridStart.getDate() + i);
-        const ds = cd.toISOString().slice(0, 10);
+        const ds = getLocalDateString(cd);
         const isOther = cd.getMonth() !== month, isToday = ds === TODAY;
         const evs = getEventsOnDate(ds).filter((e) => e.status !== "cancelled");
         html += `<div class="calendar-day ${isOther ? "other-month" : ""} ${isToday ? "today" : ""}" data-date="${ds}">`;
@@ -5454,7 +5454,7 @@
       let html = '<div class="week-view"><div class="week-grid">';
       for (let i = 0; i < 7; i++) {
         const d = new Date(monday); d.setDate(monday.getDate() + i);
-        const ds = d.toISOString().slice(0, 10);
+        const ds = getLocalDateString(d);
         const evs = getEventsOnDate(ds).filter((e) => e.status !== "cancelled");
         html += `<div class="week-col ${ds === TODAY ? "today" : ""}" data-date="${ds}">`;
         html += `<div class="week-col-head"><div class="dow">周${weekdays[i]}</div><div class="dnum">${d.getDate()}</div></div>`;
@@ -5486,7 +5486,7 @@
         const start = new Date(ev.date + "T00:00:00");
         const end = ev.repeatEnd ? new Date(ev.repeatEnd + "T00:00:00") : new Date(start);
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-          const ds = d.toISOString().slice(0, 10);
+          const ds = getLocalDateString(d);
           if (ds === ev.date) continue;
           let match = false;
           if (ev.repeat === "daily") match = true;
