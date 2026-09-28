@@ -2677,12 +2677,36 @@
         cloudUser = null;
         return null;
       }
-      const { data, error } = await cloudClient.auth.getSession();
+      const { data, error } = await withRetry(() => cloudClient.auth.getSession());
       if (error) {
         throw error;
       }
       cloudUser = data.session ? data.session.user : null;
       return data.session || null;
+    }
+
+    async function withRetry(fn, retries = 3, delay = 800) {
+      let lastError = null;
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          return await fn();
+        } catch (error) {
+          lastError = error;
+          const isNetworkError = error && (
+            error.message === "Failed to fetch" ||
+            error.message === "NetworkError when attempting to fetch resource." ||
+            error.message?.includes("fetch") ||
+            error.message?.includes("Network") ||
+            error.name === "TypeError"
+          );
+          if (!isNetworkError || attempt === retries) {
+            throw error;
+          }
+          showToast("网络连接不稳定，第 " + attempt + " 次重试...");
+          await new Promise(r => setTimeout(r, delay * attempt));
+        }
+      }
+      throw lastError;
     }
 
     function setCloudStatus(message, type = "warning") {
@@ -2790,7 +2814,7 @@
         showToast("两次输入的密码不一致");
         return;
       }
-      const { data, error } = await cloudClient.auth.signUp({ email, password });
+      const { data, error } = await withRetry(() => cloudClient.auth.signUp({ email, password }));
       if (error) {
         showToast("注册失败：" + error.message);
         return;
@@ -2822,7 +2846,7 @@
         showToast("请输入邮箱和密码");
         return;
       }
-      const { data, error } = await cloudClient.auth.signInWithPassword({ email, password });
+      const { data, error } = await withRetry(() => cloudClient.auth.signInWithPassword({ email, password }));
       if (error) {
         showToast("登录失败：" + error.message);
         return;
@@ -2842,7 +2866,7 @@
 
     async function logoutCloudAccount() {
       if (cloudClient) {
-        await cloudClient.auth.signOut();
+        await withRetry(() => cloudClient.auth.signOut());
       }
       cloudUser = null;
       cloudPassword.value = "";
@@ -2866,11 +2890,11 @@
         setCloudStatus("云端登录状态检查失败：" + error.message, "error");
         return;
       }
-      const { data, error } = await cloudClient
+      const { data, error } = await withRetry(() => cloudClient
         .from(CLOUD_TABLE)
         .select("data")
         .eq("user_id", cloudUser.id)
-        .maybeSingle();
+        .maybeSingle());
       if (error) {
         setCloudStatus("云端读取失败：" + error.message, "error");
         return;
@@ -2919,9 +2943,9 @@
         data: buildPersistedState(),
         updated_at: new Date().toISOString()
       };
-      const { error } = await cloudClient
+      const { error } = await withRetry(() => cloudClient
         .from(CLOUD_TABLE)
-        .upsert(payload, { onConflict: "user_id" });
+        .upsert(payload, { onConflict: "user_id" }));
       if (error) {
         setCloudStatus("云端保存失败：" + error.message, "error");
         return;
